@@ -25,7 +25,10 @@ function Exec([string]$File, [string[]]$CommandArgs, [string]$WorkingDir = '') {
 }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'git was not found in PATH.' }
-if (-not (Get-Command opencode -ErrorAction SilentlyContinue)) { throw 'opencode was not found in PATH.' }
+$OpencodeCmd = Get-Command opencode.cmd -ErrorAction SilentlyContinue
+if (-not $OpencodeCmd) { $OpencodeCmd = Get-Command opencode -ErrorAction SilentlyContinue }
+if (-not $OpencodeCmd) { throw 'opencode was not found in PATH.' }
+$OpencodeBin = $OpencodeCmd.Source
 
 $RepoRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
 if (-not $RepoRoot) { throw 'Run swarm.ps1 from inside a git repository.' }
@@ -84,23 +87,23 @@ Do the work now. Do not just propose steps. Inspect files, edit, and verify.
     $model = [string]$role.model
 
     $launcherBody = @'
-param($Worktree,$PromptFile,$LogFile,$StatusFile,$Mode,$UseAuto,$RoleName,$Model='')
+param($Worktree,$PromptFile,$LogFile,$StatusFile,$Mode,$UseAuto,$RoleName,$OpencodeBin,$Model='')
 $ErrorActionPreference='Continue'
 Set-Content $StatusFile 'RUNNING'
 $prompt = Get-Content $PromptFile -Raw
 Set-Location $Worktree
 try {
     if ($Mode -eq 'headless') {
-        $opencodeArgs = @('run','--dir',$Worktree)
+        $opencodeArgs = @('run')
         if ($UseAuto -eq 'True') { $opencodeArgs += '--auto' }
         if ($Model) { $opencodeArgs += @('--model',$Model) }
         $opencodeArgs += $prompt
-        & opencode $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
+        & $OpencodeBin $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
     } else {
-        $opencodeArgs = @($Worktree,'--prompt',$prompt)
+        $opencodeArgs = @('--prompt',$prompt)
         if ($UseAuto -eq 'True') { $opencodeArgs += '--auto' }
         if ($Model) { $opencodeArgs += @('--model',$Model) }
-        & opencode $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
+        & $OpencodeBin $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
     }
 
     git add -A
@@ -121,7 +124,7 @@ try {
     $launchArgs = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,
               '-Worktree',$worktree,'-PromptFile',$promptFile,'-LogFile',$log,
               '-StatusFile',$status,'-Mode',$Mode,'-UseAuto',([string]$UseAuto),
-              '-RoleName',$name)
+              '-RoleName',$name,'-OpencodeBin',$OpencodeBin)
     if ($model) {
         $launchArgs += @('-Model',$model)
     }
