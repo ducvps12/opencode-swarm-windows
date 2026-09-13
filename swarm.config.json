@@ -6,5 +6,5 @@
   ],
   "defaultMode": "interactive",
   "autoApprove": false,
-  "testCommand": ""
+  "testCommand": "node --test tests/*.test.js"
 }

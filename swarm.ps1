@@ -15,11 +15,11 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Config = Get-Content (Join-Path $ScriptDir 'swarm.config.json') -Raw | ConvertFrom-Json
 
-function Exec([string]$File, [string[]]$Args, [string]$WorkingDir = '') {
+function Exec([string]$File, [string[]]$CommandArgs, [string]$WorkingDir = '') {
     $old = Get-Location
     try {
         if ($WorkingDir) { Set-Location $WorkingDir }
-        & $File @Args
+        & $File $CommandArgs
         if ($LASTEXITCODE -ne 0) { throw "$File exited with code $LASTEXITCODE" }
     } finally { Set-Location $old }
 }
