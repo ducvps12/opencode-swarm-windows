@@ -1,0 +1,10 @@
+{
+  "roles": [
+    {"name":"ui-vfx","promptFile":".agents/ui-vfx.md","model":""},
+    {"name":"gameplay","promptFile":".agents/gameplay.md","model":""},
+    {"name":"qa","promptFile":".agents/qa.md","model":""}
+  ],
+  "defaultMode": "interactive",
+  "autoApprove": false,
+  "testCommand": ""
+}
