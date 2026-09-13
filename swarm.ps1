@@ -84,23 +84,23 @@ Do the work now. Do not just propose steps. Inspect files, edit, and verify.
     $model = [string]$role.model
 
     $launcherBody = @'
-param($Worktree,$PromptFile,$LogFile,$StatusFile,$Mode,$UseAuto,$Model,$RoleName)
+param($Worktree,$PromptFile,$LogFile,$StatusFile,$Mode,$UseAuto,$RoleName,$Model='')
 $ErrorActionPreference='Continue'
 Set-Content $StatusFile 'RUNNING'
 $prompt = Get-Content $PromptFile -Raw
 Set-Location $Worktree
 try {
     if ($Mode -eq 'headless') {
-        $args = @('run','--dir',$Worktree)
-        if ($UseAuto -eq 'True') { $args += '--auto' }
-        if ($Model) { $args += @('--model',$Model) }
-        $args += $prompt
-        & opencode @args 2>&1 | Tee-Object -FilePath $LogFile
+        $opencodeArgs = @('run','--dir',$Worktree)
+        if ($UseAuto -eq 'True') { $opencodeArgs += '--auto' }
+        if ($Model) { $opencodeArgs += @('--model',$Model) }
+        $opencodeArgs += $prompt
+        & opencode $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
     } else {
-        $args = @($Worktree,'--prompt',$prompt)
-        if ($UseAuto -eq 'True') { $args += '--auto' }
-        if ($Model) { $args += @('--model',$Model) }
-        & opencode @args 2>&1 | Tee-Object -FilePath $LogFile
+        $opencodeArgs = @($Worktree,'--prompt',$prompt)
+        if ($UseAuto -eq 'True') { $opencodeArgs += '--auto' }
+        if ($Model) { $opencodeArgs += @('--model',$Model) }
+        & opencode $opencodeArgs 2>&1 | Tee-Object -FilePath $LogFile
     }
 
     git add -A
@@ -118,13 +118,16 @@ try {
 '@
     Set-Content -Path $launcher -Value $launcherBody -Encoding UTF8
 
-    $args = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,
+    $launchArgs = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,
               '-Worktree',$worktree,'-PromptFile',$promptFile,'-LogFile',$log,
               '-StatusFile',$status,'-Mode',$Mode,'-UseAuto',([string]$UseAuto),
-              '-Model',$model,'-RoleName',$name)
+              '-RoleName',$name)
+    if ($model) {
+        $launchArgs += @('-Model',$model)
+    }
 
     Write-Host "[>] Launching $name ($Mode)" -ForegroundColor Green
-    Start-Process -FilePath 'powershell.exe' -ArgumentList $args | Out-Null
+    Start-Process -FilePath 'powershell.exe' -ArgumentList $launchArgs | Out-Null
 
     $rolesOut += [pscustomobject]@{name=$name;branch=$branch;worktree=$worktree;prompt=$promptFile;log=$log;status=$status}
 }
